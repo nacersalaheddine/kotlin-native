@@ -1,0 +1,11 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        Classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:+"
+    }
+}
+
+apply plugin: 'kotlin-native'
