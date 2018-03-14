@@ -6,7 +6,7 @@ import org.gradle.api.internal.project.ProjectInternal
 // TODO: Move from experimental package. What should be the new package?
 // TODO: What about ToolChains? Can we extend them?
 
-class KotlinNativePlugin: Plugin<ProjectInternal> {
+class KotlinNativeLibraryPlugin: Plugin<ProjectInternal> {
 
     override fun apply(target: ProjectInternal?) {
         println("TTTT!!!")
