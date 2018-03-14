@@ -1,0 +1,2 @@
+includeBuild '../../shared'
+includeBuild '../../tools/kotlin-native-gradle-plugin'

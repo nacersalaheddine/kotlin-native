@@ -4,8 +4,8 @@ buildscript {
     }
 
     dependencies {
-        Classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:+"
+        classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:+"
     }
 }
 
-apply plugin: 'kotlin-native'
+apply plugin: 'kotlin-native-application'
