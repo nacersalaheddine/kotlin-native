@@ -38,10 +38,10 @@ import org.jetbrains.kotlin.konan.target.KonanTarget
  *
  */
 open class DefaultKotlinNativeBinary(
-        private val name_: String,
-        private val baseName_: Provider<String>,
+        private val name: String,
+        private val baseName: Provider<String>,
         override val sources: FileCollection,
-        val identity: VariantIdentity,
+        val identity: KotlinNativeVariantIdentity,
         objects: ObjectFactory,
         componentImplementation: Configuration,
         configurations: ConfigurationContainer,
@@ -63,7 +63,7 @@ open class DefaultKotlinNativeBinary(
     val optimized: Boolean
         get() = identity.isOptimized
 
-    private val names_ = Names.of(name)
+    private val names = Names.of(name)
     val dependencies = objects
             .newInstance(DefaultComponentDependencies::class.java, "${name}Implementation")
             .apply {
@@ -81,9 +81,9 @@ open class DefaultKotlinNativeBinary(
         extendsFrom(this@DefaultKotlinNativeBinary.dependencies.implementationDependencies)
     }
 
-    override fun getName(): String = name_
-    override fun getNames(): Names = names_
-    override fun getBaseName(): Provider<String> = baseName_
+    override fun getName(): String = name
+    override fun getNames(): Names = names
+    override fun getBaseName(): Provider<String> = baseName
 
     override fun getDependencies(): ComponentDependencies = dependencies
 

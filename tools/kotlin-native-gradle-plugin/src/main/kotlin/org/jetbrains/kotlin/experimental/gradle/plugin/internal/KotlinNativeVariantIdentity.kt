@@ -6,7 +6,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.language.cpp.internal.NativeVariantIdentity
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
-class VariantIdentity(name: String,
+open class KotlinNativeVariantIdentity(name: String,
                       baseName: Provider<String>,
                       group: Provider<String>,
                       version: Provider<String>,
@@ -26,7 +26,4 @@ class VariantIdentity(name: String,
         konanTarget.createGradleOSFamily(objects),
         linkUsage,
         runtimeUsage
-) {
-
-
-}
+)

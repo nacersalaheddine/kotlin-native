@@ -2,7 +2,6 @@ package org.jetbrains.kotlin.experimental.gradle.plugin.internal
 
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
-import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.file.FileOperations
 import org.gradle.api.model.ObjectFactory
@@ -12,11 +11,11 @@ import org.gradle.nativeplatform.platform.NativePlatform
 import org.gradle.nativeplatform.toolchain.NativeToolChain
 import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeKlib
 
-class DefaultKotlinNativeKlib(
+open class DefaultKotlinNativeKlib(
         name: String,
         baseName: Provider<String>,
         sources: FileCollection,
-        identity: VariantIdentity,
+        identity: KotlinNativeVariantIdentity,
         objects: ObjectFactory,
         componentImplementation: Configuration,
         configurations: ConfigurationContainer,

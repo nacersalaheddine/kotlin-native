@@ -2,7 +2,9 @@ package org.jetbrains.kotlin.experimental.gradle.plugin
 
 import org.gradle.api.Action
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.SetProperty
 import org.gradle.language.BinaryCollection
 import org.gradle.language.ComponentWithBinaries
 import org.gradle.language.ComponentWithDependencies
@@ -26,13 +28,13 @@ interface KotlinNativeComponent: ComponentWithBinaries, ComponentWithDependencie
      * When a directory is added, all source files are included for compilation. When this collection is empty,
      * the directory src/main/kotlin is used by default.
      */
-    val sources: ConfigurableFileCollection
+    val sources: FileCollection
 
     /** Configures the source files or directories for this component. */
     fun source(action: Action<in ConfigurableFileCollection>)
 
     /** Specifies the kotlin native target used to build this component. */
-    val konanTarget: KonanTarget
+    val konanTargets: SetProperty<KonanTarget>
 
     /** Returns the binaries for this library. */
     override fun getBinaries(): BinaryCollection<out KotlinNativeBinary>
