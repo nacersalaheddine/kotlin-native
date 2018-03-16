@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.experimental.gradle.plugin
 
 import org.gradle.api.Task
+import org.gradle.api.attributes.Attribute
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
 import org.gradle.language.BuildableComponent
@@ -23,13 +24,20 @@ interface KotlinNativeBinary: ComponentWithDependencies, BuildableComponent {
     // TODO: Task -> KonanBuildingTask
     val compileTask: Provider<Task>
 
-    // TODO: Rename?
-    // TODO: Support native libraries here.
+    // TODO: Support native link libraries here.
     // TODO: Support runtime libraries here.
-    // Looks like we need at least 3 filecollections here: for klibs, for linktime native librareis and for runtime native libraries.
+    // Looks like we need at least 3 file collections here: for klibs, for linktime native libraries and for runtime native libraries.
     /**
      * The link libraries (klibs only!) used to link this binary.
      * Includes the link libraries of the component's dependencies.
      */
-    fun getLinkLibraries(): FileCollection
+    val klibraries: FileCollection
+
+    // TODO: Change the fq name of the attribute when it's moved into another package.
+    // TODO: Replace String with some special class
+    companion object {
+        val KOTLIN_NATIVE_TARGET_ATTRIBUTE =
+                Attribute.of("org.jetbrains.kotlin.experimental.gradle.plugin", String::class.java)
+    }
+
 }
