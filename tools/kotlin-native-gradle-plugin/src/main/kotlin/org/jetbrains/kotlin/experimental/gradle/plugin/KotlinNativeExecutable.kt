@@ -3,7 +3,7 @@ package org.jetbrains.kotlin.experimental.gradle.plugin
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.language.ComponentWithOutputs
-import org.gradle.language.PublishableComponent
+import org.gradle.api.component.PublishableComponent
 import org.gradle.language.nativeplatform.ComponentWithRuntimeUsage
 
 /*
@@ -13,7 +13,7 @@ import org.gradle.language.nativeplatform.ComponentWithRuntimeUsage
 /**
  * Represents Kotlin/Native executable.
  */
-interface KotlinNativeExecutable: KotlinNativeBinary, ComponentWithRuntimeUsage, ComponentWithOutputs, PublishableComponent {
+interface KotlinNativeExecutable: KotlinNativeBinary, ComponentWithRuntimeUsage, ComponentWithOutputs {
     /**  Returns the executable file to use with a debugger for this executable. */
     val debuggerExecutableFile: Provider<RegularFile>
 

@@ -32,7 +32,7 @@ import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.internal.PublicationInternal
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.internal.publication.MavenPublicationInternal
-import org.gradle.language.cpp.internal.NativeVariant
+import org.gradle.language.cpp.internal.NativeVariantIdentity
 import org.gradle.language.nativeplatform.internal.Names
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry
 import org.jetbrains.kotlin.gradle.plugin.KonanPlugin.Companion.COMPILE_ALL_TASK_NAME

@@ -38,6 +38,7 @@ abstract class DefaultKotlinNativeComponent @Inject constructor(
     override val konanTargets: SetProperty<KonanTarget> =
             LockableSetProperty(objects.setProperty(KonanTarget::class.java)).apply {
                 set(mutableSetOf(HostManager.host))
+                // TODO: Replace HostManger with PlatformManager
             }
 
     @Suppress("UNCHECKED_CAST")

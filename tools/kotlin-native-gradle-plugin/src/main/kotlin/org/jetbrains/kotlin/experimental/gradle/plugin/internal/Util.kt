@@ -13,9 +13,9 @@ import org.jetbrains.kotlin.konan.util.visibleName
 
 fun KonanTarget.createGradleOSFamily(objects: ObjectFactory): OperatingSystemFamily {
     val familyName = when(this.family) {
-        Family.OSX -> OperatingSystemFamily.MAC_OS
+        Family.OSX -> OperatingSystemFamily.MACOS
         Family.LINUX -> OperatingSystemFamily.LINUX
-        Family.WINDOWS -> OperatingSystemFamily.WINDOWS
+        Family.MINGW -> OperatingSystemFamily.WINDOWS
         Family.IOS,
         Family.ANDROID,
         Family.WASM,

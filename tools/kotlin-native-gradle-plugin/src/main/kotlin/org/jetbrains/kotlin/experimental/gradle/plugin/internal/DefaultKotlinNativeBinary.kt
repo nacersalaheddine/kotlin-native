@@ -13,7 +13,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.language.ComponentDependencies
 import org.gradle.language.ComponentWithDependencies
 import org.gradle.language.ComponentWithOutputs
-import org.gradle.language.PublishableComponent
+import org.gradle.api.component.PublishableComponent
 import org.gradle.language.cpp.CppBinary
 import org.gradle.language.internal.DefaultComponentDependencies
 import org.gradle.language.nativeplatform.internal.ComponentWithNames
@@ -21,6 +21,7 @@ import org.gradle.language.nativeplatform.internal.Names
 import org.jetbrains.kotlin.experimental.gradle.plugin.ComponentWithBaseName
 import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeBinary
 import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeBinary.Companion.KOTLIN_NATIVE_TARGET_ATTRIBUTE
+import org.jetbrains.kotlin.gradle.plugin.tasks.KonanBuildingTask
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
 // TODO: Implement ComponentWithObjectFiles when we are able to compile from klibs only.
@@ -87,7 +88,8 @@ open class DefaultKotlinNativeBinary(
 
     override fun getDependencies(): ComponentDependencies = dependencies
 
-    override val compileTask: Provider<Task> = objects.property<Task>(Task::class.java)
+    override val compileTask: Provider<KonanBuildingTask> =
+            objects.property(KonanBuildingTask::class.java)
 
     override fun getCoordinates(): ModuleVersionIdentifier = identity.coordinates
 

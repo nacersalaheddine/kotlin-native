@@ -4,12 +4,12 @@ import org.gradle.api.Task
 import org.gradle.api.attributes.Attribute
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
-import org.gradle.language.BuildableComponent
 import org.gradle.language.ComponentWithDependencies
+import org.jetbrains.kotlin.gradle.plugin.tasks.KonanBuildingTask
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
 // TODO: implement ComponentWithObjectFiles when we are built klibs as objects
-interface KotlinNativeBinary: ComponentWithDependencies, BuildableComponent {
+interface KotlinNativeBinary: ComponentWithDependencies {
 
     /** Returns the source files of this binary. */
     val sources: FileCollection
@@ -22,7 +22,7 @@ interface KotlinNativeBinary: ComponentWithDependencies, BuildableComponent {
 
     /** Compile task for this library */
     // TODO: Task -> KonanBuildingTask
-    val compileTask: Provider<Task>
+    val compileTask: Provider<KonanBuildingTask>
 
     // TODO: Support native link libraries here.
     // TODO: Support runtime libraries here.
