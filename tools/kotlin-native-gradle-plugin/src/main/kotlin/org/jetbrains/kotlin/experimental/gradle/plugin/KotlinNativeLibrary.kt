@@ -1,5 +1,6 @@
 package org.jetbrains.kotlin.experimental.gradle.plugin
 
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.SetProperty
 import org.gradle.nativeplatform.Linkage
@@ -10,4 +11,6 @@ interface KotlinNativeLibrary: ProductionKotlinNativeComponent {
 
     /** Returns the list of linkage of this library. */
     val linkage: SetProperty<Linkage>
+
+    fun getApiDependencies(): Configuration
 }

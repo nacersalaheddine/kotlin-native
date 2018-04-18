@@ -9,3 +9,18 @@ buildscript {
 }
 
 apply plugin: 'kotlin-native-application'
+
+sourceSets {
+    foo {
+
+    }
+}
+
+task ttt {
+    doLast {
+        println(sourceSets)
+        println(sourceSets.main)
+        println(sourceSets.main.name)
+        println(sourceSets.foo.name)
+    }
+}

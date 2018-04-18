@@ -1,12 +1,17 @@
 package org.jetbrains.kotlin.experimental.gradle.plugin.sourcesets
 
+import groovy.lang.Closure
+import org.gradle.api.Action
+import org.gradle.api.Named
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.SourceDirectorySet
+import org.gradle.api.tasks.SourceSet
 import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeBinary
 import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeComponent
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
-interface KotlinNativeSourceSet {
+interface KotlinNativeSourceSet: Named {
     /*
         Нам нужно:
             sourceDir set-ы на каждый таргет по одному
@@ -15,18 +20,25 @@ interface KotlinNativeSourceSet {
             возможность получить KotlinNativeComponent по таргету
     */
 
-    val name: String
-
-    val commonSources: SourceDirectorySet
+    val common: SourceDirectorySet
     val component: KotlinNativeComponent
 
-    val objectKlibs: Configuration // TODO: may be provide some way to use different configs for different targets?
+    fun getCommonSources(): SourceDirectorySet = common
+    fun getPlatformSources(target: KonanTarget): SourceDirectorySet
+    fun getAllSources(target: KonanTarget): FileCollection
 
-    fun getSources(target: KonanTarget): SourceDirectorySet
-    fun getBinary(target: KonanTarget): KotlinNativeBinary
+    fun common(configureClosure: Closure<*>): KotlinNativeSourceSet
+    fun common(configureAction: Action<in SourceDirectorySet>): KotlinNativeSourceSet
+    fun common(configureLambda: SourceDirectorySet.() -> Unit): KotlinNativeSourceSet
 
+    // TODO: Implement DSL for per-target source directory setting
+
+    // TODO: Implement
+    // TODO: may be provide some way to use different configs for different targets?
+    //val objectKlibs: Configuration
+    //fun getOutput(): FileCollection
 
     // TODO: Также тут нужны:
     // Таска для сборки клибы
-    // конфигурация с клибами для каждого таргета
+    // конфигурация с клибами для каждого таргета. Возможно, одна, от которой будут наследоваться специальные конфиги
 }

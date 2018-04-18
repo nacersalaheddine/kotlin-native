@@ -1,37 +1,48 @@
 package org.jetbrains.kotlin.experimental.gradle.plugin.sourcesets
 
-import org.gradle.api.artifacts.Configuration
+import groovy.lang.Closure
+import org.gradle.api.Action
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.internal.file.SourceDirectorySetFactory
-import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeBinary
+import org.gradle.util.ConfigureUtil.configure
 import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeComponent
-import org.jetbrains.kotlin.konan.target.HostManager
 import org.jetbrains.kotlin.konan.target.KonanTarget
+import javax.inject.Inject
 
-open class DefaultKotlinNativeSourceSet(
-        override val name: String,
+open class DefaultKotlinNativeSourceSet @Inject constructor(
+        private val name: String,
         val sourceDirectorySetFactory: SourceDirectorySetFactory
 ): KotlinNativeSourceSet {
 
-    override val commonSources: SourceDirectorySet = newSourceDirectorySet("common")
+    // TODO: Try to get rid of lateinit
+    override lateinit var component: KotlinNativeComponent
+
+    override val common: SourceDirectorySet = newSourceDirectorySet("common")
 
     private val platformSources: MutableMap<KonanTarget, SourceDirectorySet> = mutableMapOf()
 
-    private fun newSourceDirectorySet(name: String) = sourceDirectorySetFactory.create("common").apply {
+    private fun newSourceDirectorySet(name: String) = sourceDirectorySetFactory.create(name).apply {
         filter.include("**/*.kt")
     }
 
-    fun addPlatformSourceDirectorySet(target: KonanTarget){
-        platformSources[target] = newSourceDirectorySet(target.visibleName)
+    override fun getPlatformSources(target: KonanTarget): SourceDirectorySet = platformSources.getOrPut(target) {
+        newSourceDirectorySet(target.name)
     }
 
-    // TODO: May be use getOrPut here?
-    override fun getSources(target: KonanTarget): SourceDirectorySet = platformSources.getValue(target)
+    override fun getAllSources(target: KonanTarget): FileCollection = common + getPlatformSources(target)
 
-    override fun getBinary(target: KonanTarget): KotlinNativeBinary = TODO()
+    override fun getName(): String = name
 
-    // TODO: Maybe use a Gradle's provider here?
-    override lateinit var component: KotlinNativeComponent
-    override lateinit var objectKlibs: Configuration
+    override fun common(configureClosure: Closure<*>): DefaultKotlinNativeSourceSet = apply {
+        configure(configureClosure, common)
+    }
 
+    override fun common(configureAction: Action<in SourceDirectorySet>): DefaultKotlinNativeSourceSet = apply {
+        configureAction.execute(common)
+    }
+
+    override fun common(configureLambda: SourceDirectorySet.() -> Unit): DefaultKotlinNativeSourceSet = apply {
+        common.configureLambda()
+    }
 }

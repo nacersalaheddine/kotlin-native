@@ -4,8 +4,14 @@ import org.gradle.api.internal.component.UsageContext
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Provider
 import org.gradle.language.cpp.internal.NativeVariantIdentity
+import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.DefaultKotlinNativePlatform
+import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.getGradleOS
+import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.getGradleOSFamily
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
+/**
+ * TODO: Do we need it?
+ */
 open class KotlinNativeVariantIdentity(name: String,
                       baseName: Provider<String>,
                       group: Provider<String>,
@@ -13,8 +19,8 @@ open class KotlinNativeVariantIdentity(name: String,
                       val konanTarget: KonanTarget,
                       debuggable: Boolean,
                       optimized: Boolean,
-                      linkUsage: UsageContext,
-                      runtimeUsage: UsageContext,
+                      linkUsage: UsageContext?,
+                      runtimeUsage: UsageContext?,
                       objects: ObjectFactory
 ) : NativeVariantIdentity(
         name,
@@ -23,7 +29,9 @@ open class KotlinNativeVariantIdentity(name: String,
         version,
         debuggable,
         optimized,
-        konanTarget.createGradleOSFamily(objects),
+        konanTarget.getGradleOSFamily(objects),
         linkUsage,
         runtimeUsage
-)
+) {
+    val targetPlatform = DefaultKotlinNativePlatform(konanTarget)
+}

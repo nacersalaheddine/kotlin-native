@@ -1,22 +1,42 @@
 package org.jetbrains.kotlin.experimental.gradle.plugin
 
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.attributes.AttributeContainer
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.language.ComponentWithOutputs
 import org.gradle.api.component.PublishableComponent
+import org.gradle.api.provider.Property
+import org.gradle.language.nativeplatform.ComponentWithExecutable
+import org.gradle.language.nativeplatform.ComponentWithInstallation
 import org.gradle.language.nativeplatform.ComponentWithRuntimeUsage
-
-/*
- * TODO: We also need to extend ComponentWithExecutable and ComponentWithInstallation
- */
+import org.gradle.nativeplatform.Linkage
+import org.gradle.nativeplatform.toolchain.internal.PlatformToolProvider
 
 /**
  * Represents Kotlin/Native executable.
  */
-interface KotlinNativeExecutable: KotlinNativeBinary, ComponentWithRuntimeUsage, ComponentWithOutputs {
+interface KotlinNativeExecutable: KotlinNativeBinary,
+        ComponentWithExecutable,
+        ComponentWithInstallation,
+        ComponentWithOutputs,
+        ComponentWithRuntimeUsage,
+        PublishableComponent
+{
     /**  Returns the executable file to use with a debugger for this executable. */
-    val debuggerExecutableFile: Provider<RegularFile>
+    fun getDebuggerExecutableFile(): Property<RegularFile>
 
-    /**  Returns the executable file to produce. */
-    val executableFile: Provider<RegularFile>
+    /** Returns a PlatformToolProvider instance providing an access to Kotlin/Native tools. */
+    fun getPlatformToolProvider(): PlatformToolProvider
+
+    /** TODO: Copied from Component with ConfigurableComponentWithRuntimeUsage. Javadoc  */
+    fun getImplementationDependencies(): Configuration
+
+    fun getLinkage(): Linkage?
+
+    fun hasRuntimeFile(): Boolean
+
+    fun getRuntimeFile(): Provider<RegularFile>
+
+    fun getRuntimeAttributes(): AttributeContainer
 }

@@ -27,10 +27,12 @@ import org.gradle.api.attributes.Usage
 import org.gradle.api.internal.tasks.DefaultTaskDependency
 import org.gradle.api.tasks.*
 import org.gradle.language.cpp.CppBinary
-import org.gradle.language.cpp.internal.NativeVariant
+import org.gradle.language.cpp.internal.DefaultUsageContext
+import org.gradle.language.cpp.internal.NativeVariantIdentity
 import org.gradle.language.nativeplatform.internal.Names
 import org.gradle.nativeplatform.Linkage
 import org.gradle.util.ConfigureUtil
+import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.getGradleOSFamily
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.konan.target.HostManager
 import org.jetbrains.kotlin.konan.target.KonanTarget
@@ -111,7 +113,16 @@ abstract class KonanArtifactTask: KonanTargetableTask(), KonanArtifactSpec {
             val objectFactory = project.objects
             val linkUsage = objectFactory.named(Usage::class.java, Usage.NATIVE_LINK)
             val konanSoftwareComponent = config.mainVariant
-            konanSoftwareComponent.addVariant(NativeVariant(Names.of("${artifact.name.removeSuffix("$artifactSuffix")}_${target.name}"), linkUsage, null, linkUsage, platformConfiguration))
+            konanSoftwareComponent.addVariant(NativeVariantIdentity(
+                    "${artifact.name.removeSuffix("$artifactSuffix")}_${target.name}",
+                    project.provider { artifactName  },
+                    project.provider { project.group.toString() },
+                    project.provider { project.version.toString() },
+                    false, false /*TODO: fix debuggable/optimized options.*/,
+                    /*TODO: We don't add the configuration into the */
+                    target.getGradleOSFamily(objectFactory), DefaultUsageContext(artifactName, linkUsage, platformConfiguration.attributes),
+                    null
+            ))
         }
     }
 

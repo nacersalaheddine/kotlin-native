@@ -2,27 +2,34 @@ package org.jetbrains.kotlin.experimental.gradle.plugin
 
 import org.gradle.api.Task
 import org.gradle.api.attributes.Attribute
+import org.gradle.api.component.BuildableComponent
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
 import org.gradle.language.ComponentWithDependencies
+import org.gradle.language.nativeplatform.ComponentWithObjectFiles
+import org.jetbrains.kotlin.experimental.gradle.plugin.tasks.KotlinNativeCompile
+import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.KotlinNativePlatform
 import org.jetbrains.kotlin.gradle.plugin.tasks.KonanBuildingTask
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
 // TODO: implement ComponentWithObjectFiles when we are built klibs as objects
-interface KotlinNativeBinary: ComponentWithDependencies {
+interface KotlinNativeBinary: ComponentWithObjectFiles, ComponentWithDependencies, BuildableComponent {
 
     /** Returns the source files of this binary. */
     val sources: FileCollection
 
-    // TODO: Gradle uses NativePlatform (like CppPlatform) here. Do we need it?
     /**
-     * Konan target for which the library is built for
+     * Konan target the library is built for
      */
     val konanTarget: KonanTarget
 
+    /**
+     * Gradle NativePlatform object the binary is built for.
+     */
+    val targetPlatform: KotlinNativePlatform
+
     /** Compile task for this library */
-    // TODO: Task -> KonanBuildingTask
-    val compileTask: Provider<KonanBuildingTask>
+    val compileTask: Provider<KotlinNativeCompile>
 
     // TODO: Support native link libraries here.
     // TODO: Support runtime libraries here.
@@ -36,8 +43,8 @@ interface KotlinNativeBinary: ComponentWithDependencies {
     // TODO: Change the fq name of the attribute when it's moved into another package.
     // TODO: Replace String with some special class
     companion object {
-        val KOTLIN_NATIVE_TARGET_ATTRIBUTE =
-                Attribute.of("org.jetbrains.kotlin.experimental.gradle.plugin", String::class.java)
+        val KONAN_TARGET_ATTRIBUTE =
+                Attribute.of("org.gradle.native.kotlin.platform", String::class.java)
     }
 
 }
