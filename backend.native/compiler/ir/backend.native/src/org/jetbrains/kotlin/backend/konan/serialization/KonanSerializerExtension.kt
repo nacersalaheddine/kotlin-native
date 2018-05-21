@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.backend.konan.serialization
 
 import org.jetbrains.kotlin.backend.konan.Context
+import org.jetbrains.kotlin.backend.konan.lower.EnumEntryEnumerator
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.metadata.*
 import org.jetbrains.kotlin.protobuf.ExtensionRegistryLite
@@ -48,7 +49,8 @@ internal class KonanSerializerExtension(val context: Context) :
     }
 
     override fun serializeEnumEntry(descriptor: ClassDescriptor, proto: ProtoBuf.EnumEntry.Builder) {
-
+        // Serialization doesn't preserve enum entry order, so we need to serialize ordinal.
+        proto.setExtension(KonanLinkData.enumEntryOrdinal, EnumEntryEnumerator.getOrdinal(context, descriptor))
         super.serializeEnumEntry(descriptor, proto)
     }
 

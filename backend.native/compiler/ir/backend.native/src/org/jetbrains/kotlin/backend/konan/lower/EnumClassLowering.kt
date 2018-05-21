@@ -43,18 +43,19 @@ import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.metadata.KonanLinkData
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
+import org.jetbrains.kotlin.serialization.deserialization.getName
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.Variance
 
 
-
-
-private val enumEntryEnumerator = object {
+internal object EnumEntryEnumerator {
     private val ordinals = mutableMapOf<IrClass, Map<ClassDescriptor, Int>>()
 
     private fun assignOrdinalsToEnumEntries(irClass: IrClass): Map<ClassDescriptor, Int> {
@@ -66,7 +67,15 @@ private val enumEntryEnumerator = object {
     }
 
     fun getOrdinal(context: Context, entryDescriptor: ClassDescriptor): Int {
-        val enumClass = context.ir.getEnum(entryDescriptor.containingDeclaration as ClassDescriptor)
+        val enumClassDescriptor = entryDescriptor.containingDeclaration as ClassDescriptor
+        // If enum came from another module then we need to get serialized ordinal number.
+        // We serialize ordinal because current serialization cannot preserve enum entry order.
+        if (enumClassDescriptor is DeserializedClassDescriptor) {
+            return enumClassDescriptor.classProto.enumEntryList
+                    .first { entryDescriptor.name == enumClassDescriptor.c.nameResolver.getName(it.name) }
+                    .getExtension(KonanLinkData.enumEntryOrdinal)
+        }
+        val enumClass = context.ir.getEnum(enumClassDescriptor)
         return ordinals.getOrPut(enumClass) { assignOrdinalsToEnumEntries(enumClass) }[entryDescriptor]!!
     }
 }
@@ -209,7 +218,7 @@ internal class EnumWhenLowering(
             val eqEqCall = it.condition as IrCall
             val entry = eqEqCall.getArguments()[1].second as? IrGetEnumValue
             if (entry != null) {
-                val entryOrdinal = enumEntryEnumerator.getOrdinal(context, entry.descriptor)
+                val entryOrdinal = EnumEntryEnumerator.getOrdinal(context, entry.descriptor)
                 // replace condition with trivial comparison of ordinals
                 it.condition = IrCallImpl(eqEqCall.startOffset, eqEqCall.endOffset, areEqualByValue).apply {
                     putValueArgument(0, IrConstImpl.int(entry.startOffset, entry.endOffset, context.builtIns.intType, entryOrdinal))
@@ -255,7 +264,7 @@ internal class EnumClassLowering(val context: Context) : ClassLoweringPass {
     fun run(irFile: IrFile) {
         runOnFilePostfix(irFile)
         // EnumWhenLowering should be performed before EnumUsageLowering because
-        // the latter is performing lowering of IrGetEnumValue
+        // the latter performs lowering of IrGetEnumValue
         EnumWhenLowering(context).lower(irFile)
         EnumUsageLowering(context).lower(irFile)
     }
@@ -647,7 +656,7 @@ internal class EnumClassLowering(val context: Context) : ClassLoweringPass {
         private abstract inner class InEnumEntry(private val enumEntry: ClassDescriptor) : EnumConstructorCallTransformer {
             override fun transform(enumConstructorCall: IrEnumConstructorCall): IrExpression {
                 val name = enumEntry.name.asString()
-                val ordinal = enumEntryEnumerator.getOrdinal(context, enumEntry)
+                val ordinal = EnumEntryEnumerator.getOrdinal(context, enumEntry)
 
                 val descriptor = enumConstructorCall.descriptor
                 val startOffset = enumConstructorCall.startOffset
