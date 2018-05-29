@@ -39,15 +39,4 @@ open class DefaultKotlinNativeLibrary(
             LockableSetProperty<Linkage>(objects.setProperty(Linkage::class.java)).apply {
                 add(Linkage.STATIC)
             }
-
-
-    private val dependencies: DefaultLibraryDependencies = objects.newInstance(
-            DefaultLibraryDependencies::class.java,
-            names.withSuffix("implementation"),
-            names.withSuffix("api"))
-
-    override fun getDependencies(): ComponentDependencies = dependencies
-
-    override fun getImplementationDependencies(): Configuration = dependencies.implementationDependencies
-    override fun getApiDependencies(): Configuration = dependencies.apiDependencies
 }

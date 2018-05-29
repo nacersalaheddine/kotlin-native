@@ -22,7 +22,7 @@ import org.gradle.nativeplatform.toolchain.NativeToolChain
 import org.gradle.nativeplatform.toolchain.internal.PlatformToolProvider
 import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeKlib
 import org.jetbrains.kotlin.experimental.gradle.plugin.sourcesets.KotlinNativeSourceSet
-import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.KotlinNativeToolChain
+import org.jetbrains.kotlin.konan.target.CompilerOutputKind
 
 open class DefaultKotlinNativeKlib(
         name: String,
@@ -38,23 +38,15 @@ open class DefaultKotlinNativeKlib(
         baseName,
         sources,
         identity,
-        objects,
         projectLayout,
+        CompilerOutputKind.LIBRARY,
+        objects,
         componentImplementation,
         configurations,
         fileOperations),
     KotlinNativeKlib,
-    ConfigurableComponentWithStaticLibrary,
-    ConfigurableComponentWithLinkUsage,
-    ConfigurableComponentWithRuntimeUsage,
     SoftwareComponentInternal
 {
-    override fun isDebuggable(): Boolean = debuggable
-    override fun isOptimized(): Boolean = optimized
-
-    override fun getTargetPlatform(): NativePlatform = targetPlatform
-    override fun getToolChain(): NativeToolChain = TODO()
-
     // Properties
 
     private val linkElementsProperty: Property<Configuration> = objects.property(Configuration::class.java)
@@ -65,38 +57,6 @@ open class DefaultKotlinNativeKlib(
     override fun getLinkElements(): Property<Configuration> = linkElementsProperty
 
     override fun getLinkFile(): Property<RegularFile> = linkFileProperty
-
-    override fun getCreateTask(): Property<CreateStaticLibrary> {
-        TODO("not implemented")
-    }
-
-    override fun getRuntimeElements(): Property<Configuration> {
-        TODO("not implemented")
-    }
-
-    override fun getPlatformToolProvider(): PlatformToolProvider {
-        TODO("not implemented")
-    }
-
-    override fun getLinkAttributes(): AttributeContainer {
-        TODO("not implemented")
-    }
-
-    override fun getLinkage(): Linkage? {
-        TODO("not implemented")
-    }
-
-    override fun hasRuntimeFile(): Boolean {
-        TODO("not implemented")
-    }
-
-    override fun getRuntimeFile(): Provider<RegularFile> {
-        TODO("not implemented")
-    }
-
-    override fun getRuntimeAttributes(): AttributeContainer {
-        TODO("not implemented")
-    }
 
     override fun getUsages(): MutableSet<out UsageContext> {
         TODO("not implemented")

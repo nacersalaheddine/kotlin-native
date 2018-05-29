@@ -4,9 +4,6 @@ import org.gradle.api.internal.component.UsageContext
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Provider
 import org.gradle.language.cpp.internal.NativeVariantIdentity
-import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.DefaultKotlinNativePlatform
-import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.getGradleOS
-import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.getGradleOSFamily
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
 /**

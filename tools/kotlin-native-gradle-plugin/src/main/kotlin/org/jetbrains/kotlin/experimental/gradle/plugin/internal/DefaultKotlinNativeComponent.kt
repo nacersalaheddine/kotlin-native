@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.experimental.gradle.plugin.internal
 
 import org.gradle.api.NamedDomainObjectContainer
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.component.ComponentWithVariants
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.file.FileOperations
@@ -59,4 +60,12 @@ abstract class DefaultKotlinNativeComponent @Inject constructor(
 
     private val names = Names.of(name)
     override fun getNames(): Names = names
+
+    private val dependencies: DefaultComponentDependencies = objects.newInstance(
+            DefaultComponentDependencies::class.java,
+            names.withSuffix("implementation"))
+
+    override fun getDependencies(): ComponentDependencies = dependencies
+
+    override fun getImplementationDependencies(): Configuration = dependencies.implementationDependencies
 }

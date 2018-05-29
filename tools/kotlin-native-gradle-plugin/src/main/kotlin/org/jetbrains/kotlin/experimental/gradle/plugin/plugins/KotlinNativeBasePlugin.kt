@@ -38,9 +38,10 @@ import org.jetbrains.kotlin.experimental.gradle.plugin.internal.DefaultKotlinNat
 import org.jetbrains.kotlin.experimental.gradle.plugin.internal.DefaultKotlinNativeComponent
 import org.jetbrains.kotlin.experimental.gradle.plugin.internal.DefaultKotlinNativeExecutable
 import org.jetbrains.kotlin.experimental.gradle.plugin.tasks.KotlinNativeCompile
-import org.jetbrains.kotlin.experimental.gradle.plugin.tasks.KotlinNativeLinkExecutable
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.plugin.tasks.*
+import org.jetbrains.kotlin.konan.target.CompilerOutputKind
+import org.jetbrains.kotlin.konan.target.KonanTarget
 import java.io.File
 import javax.inject.Inject
 
@@ -56,141 +57,47 @@ class KotlinNativeBasePlugin @Inject constructor(val publicationRegistry: Projec
         }
     }
 
-    private fun addLinkTasks(
-            tasks: TaskContainerInternal,
-            components: SoftwareComponentContainer,
-            buildDirectory: DirectoryProperty,
-            providers: ProviderFactory,
-            configurations: ConfigurationContainer
-    ) {
-        fun File.asRegularFile(): Provider<RegularFile> = buildDirectory.file(providers.provider { this.absolutePath })
-
-        // TODO: Change the type. Something like KotlinNativeComponentWithLink?
-        components.withType(DefaultKotlinNativeExecutable::class.java) { executabe ->
-            println("TTTT!!! Create tasks")
-            val names = executabe.names
-
-            val linkTask = tasks.create(
-                    names.getTaskName("link"),
-                    KotlinNativeLinkExecutable::class.java
-            ).apply {
-                dependsOn(project.konanCompilerDownloadTask)
-
-                // TODO: REmove:
-                configuration = executabe.implementationDependencies
-                platformConfiguration = configuration
-                configuration.isCanBeResolved = true
-
-                konanTarget = executabe.konanTarget
-                destinationDir = buildDirectory.dir("exe/${names.dirName}").get().asFile
-                artifactName = executabe.baseName.get()
-
-                libraries {
-                    files(executabe.objects)
-                    files(executabe.linkLibraries)
-                }
-
-                enableDebug = executabe.isDebuggable
-                enableOptimizations = executabe.isOptimized
-                // TODO: Support output paths according to Gradle's conventions.
-            }
-
-            // TODO: Our link task should mimic the Gradle's one to allow this:
-            //executabe.linkTask.set(linkTask)
-            executabe.getDebuggerExecutableFile().set(linkTask.artifact.asRegularFile())
-        }
-    }
-
     private fun addCompieTasks(
             tasks: TaskContainerInternal,
             components: SoftwareComponentContainer,
             buildDirectory: DirectoryProperty,
-            configurations: ConfigurationContainer
+            providers: ProviderFactory
     ) {
         components.withType(DefaultKotlinNativeBinary::class.java) { binary ->
             val names = binary.names
             val target = binary.konanTarget
+            val kind = binary.kind
 
             val compileTask = tasks.create(
                     names.getCompileTaskName(LANGUAGE_NAME),
-                    KonanCompileLibraryTask::class.java
+                    KotlinNativeCompile::class.java
             ).apply {
-                dependsOn(project.konanCompilerDownloadTask)
-
-                println("TTT, create binary: ${binary.baseName}${binary.konanTarget.name}${binary.isDebuggable}")
-                configuration = binary.implementationDependencies
-                platformConfiguration = configuration
-                configuration.isCanBeResolved = true
-
-                konanTarget = binary.konanTarget
-                destinationDir = buildDirectory.dir("obj/${names.dirName}").get().asFile
-                artifactName = binary.baseName.get()
-                srcFiles(binary.sourceSet.getAllSources(target))
-                enableDebug = binary.isDebuggable
-                enableOptimizations = binary.isOptimized
+                this.binary = binary
+                this.outputFile.set(buildDirectory.file(providers.provider {
+                    val prefix = kind.prefix(target)
+                    val suffix = kind.suffix(target)
+                    val baseName = binary.getBaseName()
+                    "exe/${names.dirName}/${prefix}${baseName}${suffix}"
+                }))
             }
-
-            binary.objectsDir.set(compileTask.destinationDir) // TODO: Change, see above
-
-            // TODO: Our compile task should mimic the Gradle's one to allow this:
-            //binary.compileTask.set(compileTask)
+            binary.compileTask.set(compileTask)
         }
     }
 
 
     override fun apply(project: ProjectInternal): Unit = with(project) {
+        // TODO: Deal with compiler downloading.
         // TODO: Remove when this feature is available by default
         gradle.services.get(FeaturePreviews::class.java).enableFeature(FeaturePreviews.Feature.GRADLE_METADATA)
 
         // Apply base plugins
         project.pluginManager.apply(LifecycleBasePlugin::class.java)
-        project.pluginManager.apply(KotlinNativeToolchainPlugin::class.java) //  TODO: Remove it
-
-        // TODO: Fixes to work with old tasks. Remove them.
-        project.extensions.create(KonanPlugin.KONAN_EXTENSION_NAME, KonanExtension::class.java)
-        project.tasks.create(KonanPlugin.KONAN_DOWNLOAD_TASK_NAME, KonanCompilerDownloadTask::class.java)
-        // Set additional project properties like konan.home, konan.build.targets etc.
-        if (!project.hasProperty(KonanPlugin.ProjectProperty.KONAN_HOME)) {
-            project.setProperty(KonanPlugin.ProjectProperty.KONAN_HOME, project.konanCompilerDownloadDir())
-            project.setProperty(KonanPlugin.ProjectProperty.DOWNLOAD_COMPILER, true)
-        }
-
-        val tasks = project.tasks
-        val providers = project.providers
-        val buildDirectory = project.layout.buildDirectory
-        val components = project.components
-
 
         // TODO: Add Lifecycle tasks. See Base Native plugin.*
         addBaseTasks(components)
 
-
-        // Create Kotlin/Native toolchain
-        //StandardToolChainsPlugin
-
         // Create compile tasks
-        addCompieTasks(tasks, components, buildDirectory, configurations)
-
-        // Create link tasks.
-        addLinkTasks(tasks, components, buildDirectory, providers, configurations)
-
-        // Support publishing
-        // TODO: SwiftPmTarget? O_o
-        components.withType(ProductionKotlinNativeComponent::class.java) { component ->
-            project.afterEvaluate { project ->
-                if (component is DefaultKotlinNativeComponent) {
-
-                    publicationRegistry.registerPublication(
-                            project.path,
-                            DefaultProjectPublication(
-                                    component.displayName,
-                                    SwiftPmTarget(component.getBaseName().get()),
-                                    false
-                            )
-                    )
-                }
-            }
-        }
+        addCompieTasks(tasks, components, layout.buildDirectory, providers)
     }
 
     companion object {

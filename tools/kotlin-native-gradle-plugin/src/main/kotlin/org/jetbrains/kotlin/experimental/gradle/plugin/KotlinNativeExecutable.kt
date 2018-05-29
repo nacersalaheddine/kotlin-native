@@ -23,20 +23,17 @@ interface KotlinNativeExecutable: KotlinNativeBinary,
         ComponentWithRuntimeUsage,
         PublishableComponent
 {
-    /**  Returns the executable file to use with a debugger for this executable. */
-    fun getDebuggerExecutableFile(): Property<RegularFile>
-
-    /** Returns a PlatformToolProvider instance providing an access to Kotlin/Native tools. */
-    fun getPlatformToolProvider(): PlatformToolProvider
-
-    /** TODO: Copied from Component with ConfigurableComponentWithRuntimeUsage. Javadoc  */
-    fun getImplementationDependencies(): Configuration
-
-    fun getLinkage(): Linkage?
-
-    fun hasRuntimeFile(): Boolean
-
-    fun getRuntimeFile(): Provider<RegularFile>
-
-    fun getRuntimeAttributes(): AttributeContainer
+//    /**  Returns the executable file to use with a debugger for this executable. */
+//    fun getDebuggerExecutableFile(): Property<RegularFile>
+//
+//    /** TODO: Copied from Component with ConfigurableComponentWithRuntimeUsage. Javadoc  */
+//    fun getImplementationDependencies(): Configuration
+//
+//    fun getLinkage(): Linkage?
+//
+//    fun hasRuntimeFile(): Boolean
+//
+//    fun getRuntimeFile(): Provider<RegularFile>
+//
+//    fun getRuntimeAttributes(): AttributeContainer
 }

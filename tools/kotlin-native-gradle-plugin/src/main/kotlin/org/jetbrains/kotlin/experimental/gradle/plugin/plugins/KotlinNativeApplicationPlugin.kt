@@ -8,45 +8,25 @@ import org.gradle.api.internal.attributes.ImmutableAttributesFactory
 import org.gradle.api.internal.file.SourceDirectorySetFactory
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.internal.reflect.Instantiator
-import org.gradle.language.base.plugins.LifecycleBasePlugin
-import org.gradle.language.cpp.CppBinary
 import org.gradle.language.internal.NativeComponentFactory
 import org.gradle.language.nativeplatform.internal.BuildType
-import org.gradle.nativeplatform.OperatingSystemFamily
 import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeApplication
 import org.jetbrains.kotlin.experimental.gradle.plugin.internal.DefaultKotlinNativeApplication
 import org.jetbrains.kotlin.experimental.gradle.plugin.sourcesets.DefaultKotlinNativeSourceSet
 import org.jetbrains.kotlin.experimental.gradle.plugin.sourcesets.KotlinNativeSourceSet
-import java.util.concurrent.Callable
 import javax.inject.Inject
 
 import org.gradle.language.cpp.CppBinary.DEBUGGABLE_ATTRIBUTE
 import org.gradle.language.cpp.CppBinary.OPTIMIZED_ATTRIBUTE
 import org.gradle.language.cpp.internal.DefaultUsageContext
-import org.gradle.language.cpp.internal.NativeVariantIdentity
 import org.gradle.language.nativeplatform.internal.toolchains.ToolChainSelector
-import org.gradle.language.plugins.NativeBasePlugin
 import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeBinary.Companion.KONAN_TARGET_ATTRIBUTE
 import org.jetbrains.kotlin.experimental.gradle.plugin.internal.KotlinNativeVariantIdentity
-import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.DefaultKotlinNativePlatform
-import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.KotlinNativePlatform
-import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.KotlinNativeToolChain
-import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.getGradleOSFamily
 import org.jetbrains.kotlin.konan.target.HostManager
 
 // TODO: Move from experimental package. What should be the new package?
-
-/*
-    TODO: Improve NativeBase support
-    Once we support Kotlin/Native toolchain and klib linking we will be able to use the Gradle's install, link etc tasks.
-    To do it we will need to implement interfaces like ConfigurableComponentWithStaticLibrary in according
-    binaries. With that the NativeBase plugin will be able to create a set of tasks for this binaries.
-    See details in NativeBase plugin.
- */
-
 class KotlinNativeApplicationPlugin @Inject constructor(
         val componentFactory: NativeComponentFactory,
-        val toolChainSelector: ToolChainSelector,
         val attributesFactory: ImmutableAttributesFactory
 ): Plugin<ProjectInternal> {
 
@@ -119,8 +99,6 @@ class KotlinNativeApplicationPlugin @Inject constructor(
                             DefaultUsageContext(variantName + "Runtime", runtimeUsage, runtimeAttributes),
                             objects
                     )
-
-                    println("Create a variantIdentity: $variantIdentity")
 
                     //TODO: This part is made in the same manner as it's done in the Cpp plugin. Do we really need this separation?
                     if (target == HostManager.host) {

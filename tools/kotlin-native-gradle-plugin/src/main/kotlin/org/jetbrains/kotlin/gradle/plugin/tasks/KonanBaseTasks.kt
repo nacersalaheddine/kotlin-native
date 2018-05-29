@@ -29,10 +29,9 @@ import org.gradle.api.tasks.*
 import org.gradle.language.cpp.CppBinary
 import org.gradle.language.cpp.internal.DefaultUsageContext
 import org.gradle.language.cpp.internal.NativeVariantIdentity
-import org.gradle.language.nativeplatform.internal.Names
 import org.gradle.nativeplatform.Linkage
 import org.gradle.util.ConfigureUtil
-import org.jetbrains.kotlin.experimental.gradle.plugin.toolchain.getGradleOSFamily
+import org.jetbrains.kotlin.experimental.gradle.plugin.internal.getGradleOSFamily
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.konan.target.HostManager
 import org.jetbrains.kotlin.konan.target.KonanTarget
