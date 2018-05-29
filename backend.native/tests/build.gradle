@@ -2405,6 +2405,12 @@ task serialized_no_typemap(type: RunStandaloneKonanTest) {
     goldValue = "OK\n"
 }
 
+task serialized_enum_ordinal(type: LinkKonanTest) {
+    source = "serialization/enum_ordinal/main.kt"
+    lib = "serialization/enum_ordinal/library.kt"
+    goldValue = "0\n1\n2\nb\n"
+}
+
 task testing_annotations(type: RunStandaloneKonanTest) {
     source = "testing/annotations.kt"
     flags = ['-tr']
