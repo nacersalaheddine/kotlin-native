@@ -43,42 +43,11 @@ import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.metadata.KonanLinkData
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
-import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.serialization.deserialization.getName
 import org.jetbrains.kotlin.storage.LockBasedStorageManager
-import org.jetbrains.kotlin.types.TypeProjectionImpl
-import org.jetbrains.kotlin.types.TypeSubstitutor
-import org.jetbrains.kotlin.types.Variance
-
-
-internal object EnumEntryEnumerator {
-    private val ordinals = mutableMapOf<IrClass, Map<ClassDescriptor, Int>>()
-
-    private fun assignOrdinalsToEnumEntries(irClass: IrClass): Map<ClassDescriptor, Int> {
-        val enumEntryOrdinals = mutableMapOf<ClassDescriptor, Int>()
-        irClass.declarations.filterIsInstance<IrEnumEntry>().forEachIndexed { index, entry ->
-            enumEntryOrdinals[entry.descriptor] = index
-        }
-        return enumEntryOrdinals
-    }
-
-    fun getOrdinal(context: Context, entryDescriptor: ClassDescriptor): Int {
-        val enumClassDescriptor = entryDescriptor.containingDeclaration as ClassDescriptor
-        // If enum came from another module then we need to get serialized ordinal number.
-        // We serialize ordinal because current serialization cannot preserve enum entry order.
-        if (enumClassDescriptor is DeserializedClassDescriptor) {
-            return enumClassDescriptor.classProto.enumEntryList
-                    .first { entryDescriptor.name == enumClassDescriptor.c.nameResolver.getName(it.name) }
-                    .getExtension(KonanLinkData.enumEntryOrdinal)
-        }
-        val enumClass = context.ir.getEnum(enumClassDescriptor)
-        return ordinals.getOrPut(enumClass) { assignOrdinalsToEnumEntries(enumClass) }[entryDescriptor]!!
-    }
-}
+import org.jetbrains.kotlin.types.*
 
 
 internal class EnumSyntheticFunctionsBuilder(val context: Context) {
@@ -204,7 +173,7 @@ internal class EnumWhenLowering(
             return super.visitBlock(expression)
         }
         // Will be initialized only when we found a branch that compares
-        // subject with compile-time known enum entry
+        // subject with compile-time known enum entry.
         val ordinalVariable: IrVariable by lazy {
             val variable = createOrdinalVariable(expression)
             expression.statements.add(1, variable)
@@ -214,16 +183,14 @@ internal class EnumWhenLowering(
             it.owner.valueParameters[0].type == context.builtIns.intType
         }
         val whenExpr = expression.statements[1] as IrWhen
-        whenExpr.branches.filter { it.condition is IrCall }.forEach {
-            val eqEqCall = it.condition as IrCall
-            val entry = eqEqCall.getArguments()[1].second as? IrGetEnumValue
-            if (entry != null) {
-                val entryOrdinal = EnumEntryEnumerator.getOrdinal(context, entry.descriptor)
-                // replace condition with trivial comparison of ordinals
-                it.condition = IrCallImpl(eqEqCall.startOffset, eqEqCall.endOffset, areEqualByValue).apply {
-                    putValueArgument(0, IrConstImpl.int(entry.startOffset, entry.endOffset, context.builtIns.intType, entryOrdinal))
-                    putValueArgument(1, IrGetValueImpl(ordinalVariable.startOffset, ordinalVariable.endOffset, ordinalVariable.symbol))
-                }
+        whenExpr.branches.filter { isComparisonWithEnumEntry(it) }.forEach {
+            val eqEqCall = it.condition as IrMemberAccessExpression
+            val entry = eqEqCall.getArguments()[1].second as IrGetEnumValue
+            val entryOrdinal = context.specialDeclarationsFactory.getEnumEntryOrdinal(entry.descriptor)
+            // replace condition with trivial comparison of ordinals
+            it.condition = IrCallImpl(eqEqCall.startOffset, eqEqCall.endOffset, areEqualByValue).apply {
+                putValueArgument(0, IrConstImpl.int(entry.startOffset, entry.endOffset, context.builtIns.intType, entryOrdinal))
+                putValueArgument(1, IrGetValueImpl(ordinalVariable.startOffset, ordinalVariable.endOffset, ordinalVariable.symbol))
             }
         }
         // Process nested when constructs.
@@ -231,17 +198,44 @@ internal class EnumWhenLowering(
         return expression
     }
 
+    // We are looking for branch that is a comparison of the subject and another enum entry.
+    // Both entries should belong to the same class.
+    private fun isComparisonWithEnumEntry(branch: IrBranch): Boolean {
+        val call = branch.condition as? IrMemberAccessExpression
+                ?: return false
+        if (call.origin != IrStatementOrigin.EQEQ) {
+            return false
+        }
+        // Types should be the same.
+        val callArgs = call.getArguments()
+        if (callArgs.size == 2 && callArgs[1].second.type == callArgs[0].second.type) {
+            // Check that we're comparing with enum entry
+            return callArgs[1].second is IrGetEnumValue
+        }
+        return false
+    }
+
     // Checks that irBlock satisfies all constrains of this lowering.
     // 1. Block's origin is WHEN
     // 2. Subject of `when` is variable of enum type
+    // NB: See BranchingExpressionGenerator in Kotlin sources to get insight about
+    // `when` block translation to IR.
     private fun shouldLower(irBlock: IrBlock): Boolean {
         if (irBlock.origin != IrStatementOrigin.WHEN) {
             return false
         }
-        // when-block should have two children: temporary variable and when itself.
-        assert(irBlock.statements.size == 2)
-        val tempVariable = irBlock.statements[0] as IrVariable
-        val enumClass = tempVariable.type.constructor.declarationDescriptor as? ClassDescriptor ?: return false
+        // when-block with subject should have two children: temporary variable and when itself.
+        if (irBlock.statements.size != 2) {
+            return false
+        }
+        val subject = irBlock.statements[0] as IrVariable
+        // Subject should not be nullable because we will access the `ordinal` property.
+        if (subject.type.isNullable()) {
+            return false
+        }
+        // Check that subject is enum entry.
+        val enumClass = subject.type.constructor.declarationDescriptor as? ClassDescriptor
+                ?: return false
         return enumClass.kind == ClassKind.ENUM_CLASS
     }
 
@@ -252,7 +246,7 @@ internal class EnumWhenLowering(
             dispatchReceiver = IrGetValueImpl(tempVariable.startOffset, tempVariable.endOffset, tempVariable.symbol)
         }
         // Create temporary variable for subject's ordinal.
-        val ordinalDescriptor = IrTemporaryVariableDescriptorImpl(tempVariable.descriptor,
+        val ordinalDescriptor = IrTemporaryVariableDescriptorImpl(tempVariable.descriptor.containingDeclaration,
                 Name.identifier(tempVariable.name.asString() + "_ordinal"), context.builtIns.intType)
         return IrVariableImpl(tempVariable.startOffset, tempVariable.endOffset,
                 IrDeclarationOrigin.IR_TEMPORARY_VARIABLE, ordinalDescriptor, getOrdinal)
@@ -656,7 +650,7 @@ internal class EnumClassLowering(val context: Context) : ClassLoweringPass {
         private abstract inner class InEnumEntry(private val enumEntry: ClassDescriptor) : EnumConstructorCallTransformer {
             override fun transform(enumConstructorCall: IrEnumConstructorCall): IrExpression {
                 val name = enumEntry.name.asString()
-                val ordinal = EnumEntryEnumerator.getOrdinal(context, enumEntry)
+                val ordinal = context.specialDeclarationsFactory.getEnumEntryOrdinal(enumEntry)
 
                 val descriptor = enumConstructorCall.descriptor
                 val startOffset = enumConstructorCall.startOffset

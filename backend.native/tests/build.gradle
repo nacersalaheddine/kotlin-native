@@ -755,6 +755,11 @@ task enum_loop(type: RunKonanTest) {
     source = "codegen/enum/loop.kt"
 }
 
+task switchLowering(type: RunKonanTest) {
+    goldValue = "EnumA.A\nok\nok\nok\nok\n"
+    source = "codegen/enum/switchLowering.kt"
+}
+
 task mangling(type: LinkKonanTest) {
     goldValue = 
         "Int direct [1, 2, 3, 4]\n" +
