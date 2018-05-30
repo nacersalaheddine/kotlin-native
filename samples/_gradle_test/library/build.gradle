@@ -1,0 +1,17 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:+"
+    }
+}
+
+apply plugin: 'kotlin-native-application'
+
+task ttt {
+    doLast {
+        println(application.baseName)
+    }
+}
