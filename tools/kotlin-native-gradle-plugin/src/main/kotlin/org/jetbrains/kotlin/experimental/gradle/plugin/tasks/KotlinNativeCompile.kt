@@ -6,10 +6,7 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import org.gradle.language.nativeplatform.tasks.AbstractNativeCompileTask
 import org.gradle.nativeplatform.toolchain.internal.NativeCompileSpec
 import org.jetbrains.kotlin.experimental.gradle.plugin.KotlinNativeBinary
@@ -32,14 +29,14 @@ open class KotlinNativeCompile: DefaultTask() {
         @InputFiles get() = binary.sources
 
     val libraries: Configuration
-        @InputFiles get() = binary.implementationDependencies
+        @InputFiles get() = binary.klibraries
 
     val optimized:  Boolean @Input get() = binary.optimized
     val debuggable: Boolean @Input get() = binary.debuggable
 
     val kind: CompilerOutputKind @Input get() = binary.kind
 
-    val target: KonanTarget @Input get() = binary.konanTarget
+    val target: String @Input get() = binary.konanTarget.name
 
     @OutputFile
     val outputFile: RegularFileProperty = newOutputFile()
@@ -52,12 +49,13 @@ open class KotlinNativeCompile: DefaultTask() {
         output.parentFile.mkdirs()
 
         val args = mutableListOf<String>().apply {
-            addArg("-o", outputFile.asFile.get().absolutePath)
+            println("TTT: ${outputFile.get().asFile.absolutePath}")
+            addArg("-o", outputFile.get().asFile.absolutePath)
             addKey("-opt", optimized)
             addKey("-g", debuggable)
             addKey("-ea", debuggable)
 
-            addArg("-target", target.name)
+            addArg("-target", target)
             addArg("-p", kind.name.toLowerCase())
 
             libraries.files.forEach {library ->

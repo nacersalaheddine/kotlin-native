@@ -76,7 +76,7 @@ class KotlinNativeBasePlugin @Inject constructor(val publicationRegistry: Projec
                 this.outputFile.set(buildDirectory.file(providers.provider {
                     val prefix = kind.prefix(target)
                     val suffix = kind.suffix(target)
-                    val baseName = binary.getBaseName()
+                    val baseName = binary.getBaseName().get()
                     "exe/${names.dirName}/${prefix}${baseName}${suffix}"
                 }))
             }
