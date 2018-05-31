@@ -1,0 +1,1 @@
+fun foo(args: Array<String>) = 42
