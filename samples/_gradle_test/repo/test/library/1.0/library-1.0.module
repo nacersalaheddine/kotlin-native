@@ -1,0 +1,49 @@
+{
+  "formatVersion": "0.3",
+  "component": {
+    "group": "test",
+    "module": "library",
+    "version": "1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "4.8-20180417000132+0000",
+      "buildId": "pouqkiul2rgyzl2vr7gnwdeumu"
+    }
+  },
+  "variants": [
+    {
+      "name": "debugLink",
+      "attributes": {
+        "org.gradle.native.debuggable": true,
+        "org.gradle.native.kotlin.platform": "macos_x64",
+        "org.gradle.native.optimized": false,
+        "org.gradle.usage": "kotlin-native-klib"
+      },
+      "available-at": {
+        "url": "../../library_debug/1.0/library_debug-1.0.module",
+        "group": "test",
+        "module": "library_debug",
+        "version": "1.0"
+      }
+    },
+    {
+      "name": "releaseLink",
+      "attributes": {
+        "org.gradle.native.debuggable": true,
+        "org.gradle.native.kotlin.platform": "macos_x64",
+        "org.gradle.native.optimized": true,
+        "org.gradle.usage": "kotlin-native-klib"
+      },
+      "available-at": {
+        "url": "../../library_release/1.0/library_release-1.0.module",
+        "group": "test",
+        "module": "library_release",
+        "version": "1.0"
+      }
+    }
+  ]
+}

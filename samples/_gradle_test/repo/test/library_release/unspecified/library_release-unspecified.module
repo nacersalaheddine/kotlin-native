@@ -1,0 +1,38 @@
+{
+  "formatVersion": "0.3",
+  "component": {
+    "url": "../../library/unspecified/library-unspecified.module",
+    "group": "test",
+    "module": "library",
+    "version": "unspecified",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "4.8-20180417000132+0000",
+      "buildId": "b635hnsxjffmjh6wgn3wix6mdu"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseLink",
+      "attributes": {
+        "org.gradle.native.debuggable": true,
+        "org.gradle.native.kotlin.platform": "macos_x64",
+        "org.gradle.native.optimized": true,
+        "org.gradle.usage": "kotlin-native-klib"
+      },
+      "files": [
+        {
+          "name": "library.klib",
+          "url": "library_release-unspecified.klib",
+          "size": 6803,
+          "sha1": "681b1d8fd90b29b6cc04e2c4c629684517170ddf",
+          "md5": "c6d5ac228e79062e1ab1767c40d7d0af"
+        }
+      ]
+    }
+  ]
+}

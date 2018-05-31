@@ -8,10 +8,17 @@ buildscript {
     }
 }
 
-apply plugin: 'kotlin-native-application'
+apply plugin: 'kotlin-native'
 
-task ttt {
-    doLast {
-        println(application.baseName)
+repositories {
+    maven {
+        url = 'repo'
     }
 }
+
+components.main {
+    dependencies {
+        implementation 'test:library:1.0'
+    }
+}
+

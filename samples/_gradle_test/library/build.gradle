@@ -8,10 +8,22 @@ buildscript {
     }
 }
 
-apply plugin: 'kotlin-native-application'
+apply plugin: 'maven-publish'
+apply plugin: 'kotlin-native'
 
-task ttt {
-    doLast {
-        println(application.baseName)
+
+group 'test'
+version '1.0'
+
+components.main {
+    outputKinds = [ KLIBRARY ]
+}
+
+
+publishing {
+    repositories {
+        maven {
+            url = '../repo'
+        }
     }
 }
