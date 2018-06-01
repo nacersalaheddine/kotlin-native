@@ -95,8 +95,8 @@ internal class EnumWhenLowering(private val context: Context) : IrElementTransfo
             it.condition = lowerExpressionIfNeeded(it.condition)
         }
         // If we're processing when comma-separated condition then body of the last branch should be comparison.
-        if (whenExpr.branches.isNotEmpty() && whenExpr.branches.last() is IrConst<*>) {
-            val lastBranch  = whenExpr.branches.last()
+        if (whenExpr.branches.lastOrNull()?.condition is IrConst<*>) {
+            val lastBranch = whenExpr.branches.last()
             lastBranch.result = lowerExpressionIfNeeded(lastBranch.result)
         }
     }
@@ -109,8 +109,8 @@ internal class EnumWhenLowering(private val context: Context) : IrElementTransfo
         // replace condition with trivial comparison of ordinals
         val ordinalVariable = ordinalVariableProvider()
         return IrCallImpl(eqEqCall.startOffset, eqEqCall.endOffset, areEqualByValue).apply {
-            putValueArgument(0, IrConstImpl.int(entry.startOffset, entry.endOffset, context.builtIns.intType, entryOrdinal))
-            putValueArgument(1, IrGetValueImpl(ordinalVariable.startOffset, ordinalVariable.endOffset, ordinalVariable.symbol))
+            putValueArgument(0, IrGetValueImpl(ordinalVariable.startOffset, ordinalVariable.endOffset, ordinalVariable.symbol))
+            putValueArgument(1, IrConstImpl.int(entry.startOffset, entry.endOffset, context.builtIns.intType, entryOrdinal))
         }
     }
 
