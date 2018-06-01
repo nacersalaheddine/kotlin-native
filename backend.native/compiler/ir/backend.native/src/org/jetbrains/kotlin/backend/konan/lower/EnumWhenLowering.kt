@@ -27,83 +27,12 @@ internal class EnumWhenLowering(
         private val context: Context)
     : IrElementTransformerVoid(), FileLoweringPass {
 
-    val areEqualByValue = context.ir.symbols.areEqualByValue.first {
+    private val areEqualByValue = context.ir.symbols.areEqualByValue.first {
         it.owner.valueParameters[0].type == context.builtIns.intType
     }
 
     override fun lower(irFile: IrFile) {
         visitFile(irFile)
-    }
-
-    override fun visitBlock(expression: IrBlock): IrExpression {
-        if (!shouldLower(expression)) {
-            return super.visitBlock(expression)
-        }
-        // Will be initialized only when we found a branch that compares
-        // subject with compile-time known enum entry.
-        val ordinalVariable: IrVariable by lazy {
-            val variable = createOrdinalVariable(expression)
-            expression.statements.add(1, variable)
-            variable
-        }
-        val whenExpr = expression.statements[1] as IrWhen
-        processWhen(whenExpr) { ordinalVariable }
-        // Process comma-separated cases.
-        whenExpr.branches
-                .filter(::isWhenCommaCondition)
-                .map { it.condition as IrWhen }
-                .forEach { processWhen(it) { ordinalVariable } }
-        // Process nested when constructs.
-        expression.transformChildrenVoid(this)
-        return expression
-    }
-
-    private fun processWhen(whenExpr: IrWhen, ordinalVariableProvider: () -> IrVariable) {
-        whenExpr.branches
-                .filter { isComparisonWithEnumEntry(it.condition) }
-                .forEach {
-            it.condition = createComparisonOfOrdinals(it.condition as IrMemberAccessExpression, ordinalVariableProvider)
-        }
-        // If we're processing when comma condition then body of the last branch is comparison.
-        if (whenExpr.branches.isNotEmpty() && whenExpr.branches.last() is IrConst<*>) {
-            val last  = whenExpr.branches.last()
-            if (isComparisonWithEnumEntry(last.result)) {
-                last.result = createComparisonOfOrdinals(last.result as IrMemberAccessExpression, ordinalVariableProvider)
-            }
-        }
-    }
-
-    private fun createComparisonOfOrdinals(eqEqCall: IrMemberAccessExpression, ordinalVariableProvider: () -> IrVariable): IrCall {
-        val entry = eqEqCall.getArguments()[1].second as IrGetEnumValue
-        val entryOrdinal = context.specialDeclarationsFactory.getEnumEntryOrdinal(entry.descriptor)
-        // replace condition with trivial comparison of ordinals
-        val ordinalVariable = ordinalVariableProvider()
-        return IrCallImpl(eqEqCall.startOffset, eqEqCall.endOffset, areEqualByValue).apply {
-            putValueArgument(0, IrConstImpl.int(entry.startOffset, entry.endOffset, context.builtIns.intType, entryOrdinal))
-            putValueArgument(1, IrGetValueImpl(ordinalVariable.startOffset, ordinalVariable.endOffset, ordinalVariable.symbol))
-        }
-    }
-
-    private fun isWhenCommaCondition(branch: IrBranch): Boolean {
-        val condition = branch.condition
-        return condition is IrWhen && condition.origin == IrStatementOrigin.WHEN_COMMA
-    }
-
-    // We are looking for branch that is a comparison of the subject and another enum entry.
-    // Both entries should belong to the same class.
-    private fun isComparisonWithEnumEntry(expression : IrExpression): Boolean {
-        val call = expression as? IrMemberAccessExpression
-                ?: return false
-        if (call.origin != IrStatementOrigin.EQEQ) {
-            return false
-        }
-        // Types should be the same.
-        val callArgs = call.getArguments()
-        if (callArgs.size == 2 && callArgs[1].second.type == callArgs[0].second.type) {
-            // Check that we're comparing with enum entry
-            return callArgs[1].second is IrGetEnumValue
-        }
-        return false
     }
 
     // Checks that irBlock satisfies all constrains of this lowering.
@@ -128,6 +57,84 @@ internal class EnumWhenLowering(
         val enumClass = subject.type.constructor.declarationDescriptor as? ClassDescriptor
                 ?: return false
         return enumClass.kind == ClassKind.ENUM_CLASS
+    }
+
+    override fun visitBlock(expression: IrBlock): IrExpression {
+        if (!shouldLower(expression)) {
+            return super.visitBlock(expression)
+        }
+        // Will be initialized only when we found a branch that compares
+        // subject with compile-time known enum entry.
+        val ordinalVariable: IrVariable by lazy {
+            val variable = createOrdinalVariable(expression)
+            expression.statements.add(1, variable)
+            variable
+        }
+        val whenExpr = expression.statements[1] as IrWhen
+        // ordinalVariable should be passed lazily because it should be created
+        // only once.
+        lowerWhen(whenExpr) { ordinalVariable }
+        // Process comma-separated cases.
+        whenExpr.branches
+                .filter(::isCommaSeparatedCondition)
+                .map { it.condition as IrWhen }
+                .forEach { lowerWhen(it) { ordinalVariable } }
+        // Process nested when constructs.
+        expression.transformChildrenVoid(this)
+        return expression
+    }
+
+    private fun lowerWhen(whenExpr: IrWhen, ordinalVariableProvider: () -> IrVariable) {
+        whenExpr.branches.forEach {
+            it.condition = lowerIfNeeded(it.condition, ordinalVariableProvider)
+        }
+        // If we're processing when comma-separated condition then body of the last branch should be comparison.
+        if (whenExpr.branches.isNotEmpty() && whenExpr.branches.last() is IrConst<*>) {
+            val lastBranch  = whenExpr.branches.last()
+            lastBranch.result = lowerIfNeeded(lastBranch.result, ordinalVariableProvider)
+        }
+    }
+
+    private fun lowerIfNeeded(expression: IrExpression, ordinalVariableProvider: () -> IrVariable) =
+        if (isComparisonWithEnumEntry(expression)) {
+            createComparisonOfOrdinals(expression, ordinalVariableProvider)
+        } else {
+            expression
+        }
+
+    private fun createComparisonOfOrdinals(expression: IrExpression, ordinalVariableProvider: () -> IrVariable): IrCall {
+        // Checked before in isComparisonWithEnumEntry
+        val eqEqCall = expression as IrMemberAccessExpression
+        val entry = eqEqCall.getArguments()[1].second as IrGetEnumValue
+        val entryOrdinal = context.specialDeclarationsFactory.getEnumEntryOrdinal(entry.descriptor)
+        // replace condition with trivial comparison of ordinals
+        val ordinalVariable = ordinalVariableProvider()
+        return IrCallImpl(eqEqCall.startOffset, eqEqCall.endOffset, areEqualByValue).apply {
+            putValueArgument(0, IrConstImpl.int(entry.startOffset, entry.endOffset, context.builtIns.intType, entryOrdinal))
+            putValueArgument(1, IrGetValueImpl(ordinalVariable.startOffset, ordinalVariable.endOffset, ordinalVariable.symbol))
+        }
+    }
+
+    private fun isCommaSeparatedCondition(branch: IrBranch): Boolean {
+        val condition = branch.condition
+        return condition is IrWhen && condition.origin == IrStatementOrigin.WHEN_COMMA
+    }
+
+    // We are looking for branch that is a comparison of the subject and another enum entry.
+    // Both entries should belong to the same class.
+    private fun isComparisonWithEnumEntry(expression : IrExpression): Boolean {
+        val call = expression as? IrMemberAccessExpression
+                ?: return false
+        if (call.origin != IrStatementOrigin.EQEQ) {
+            return false
+        }
+        // Types should be the same.
+        val callArgs = call.getArguments()
+        if (callArgs.size == 2 && callArgs[1].second.type == callArgs[0].second.type) {
+            // Check that we're comparing with enum entry
+            return callArgs[1].second is IrGetEnumValue
+        }
+        return false
     }
 
     private fun createOrdinalVariable(irBlock: IrBlock): IrVariable {
