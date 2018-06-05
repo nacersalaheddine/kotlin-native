@@ -25,6 +25,5 @@ fun inline_assert() {
     inline_todo()
     inline_assert()
     inline_maxof()
-    inline_areEqual()
 }
 
